@@ -95,7 +95,7 @@ class TORRENTZProvider(generic.TorrentProvider):
         #text = re.sub(r'\([^)]*\)', '', text)
         return sanitizeSceneName(text, ezrss=True).replace('.',' ').replace('-',' ').encode('utf-8')
         
-    def _doSearch(self, search_params, show=None):
+    def _doSearch(self, search_params, search_mode='eponly', epcount=0, age=0):
         try:
             params = { }
         
@@ -108,10 +108,12 @@ class TORRENTZProvider(generic.TorrentProvider):
             else:
                 params.update({"baseurl" : "feed"})
 
-            if not 'episode' in params:
+            if 'episode' in params:
+                searchURL = self.url + "%(baseurl)s?q=%(show_name)s S%(season)02dE%(episode)02d" % params
+            elif 'season' in params:
                 searchURL = self.url + "%(baseurl)s?q=%(show_name)s S%(season)02d" % params
             else:
-                searchURL = self.url + "%(baseurl)s?q=%(show_name)s S%(season)02dE%(episode)02d" % params
+                searchURL = self.url + "%(baseurl)s?q=" % params
                 
             searchURL = searchURL.replace(" ", "+")
             
@@ -190,15 +192,7 @@ class TORRENTZCache(tvcache.TVCache):
     def _getRSSData(self):
         params = { }
         
-        if TORRENTZ_VERIFIED:
-            params.update({"baseurl" : "feed_verified"})
-        else:
-            params.update({"baseurl" : "feedA"})
-        url = self.provider.url + '%(baseurl)s?q=' % params
-               
-        logger.log(self.provider.name + u" cache update URL: " + url)
-
-        data = self.provider.getURL(url)
+        data = self.provider._doSearch({})
         return data
     
     def _parseItem(self, item):
